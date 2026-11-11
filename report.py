@@ -1,35 +1,35 @@
+from collections import defaultdict
 from datetime import datetime
-from typing import List
+from typing import Dict, List
+
 from account import Account
+from interfaces import IReportGenerator
 
 
-class Report:
+class Report(IReportGenerator):
 
     def __init__(self, title: str, accounts: List[Account]) -> None:
-        self._title: str = title
-        self._accounts: List[Account] = accounts
-        self._generated_at: datetime = datetime.now()
+        self._title = title
+        self._accounts = accounts
+        self._generated_at = datetime.now()
 
     def generate_summary(self) -> str:
-        report_lines: List[str] = [
+        lines: List[str] = [
             f"Report: {self._title}",
             f"Generated at: {self._generated_at.strftime('%Y-%m-%d %H:%M:%S')}",
             "------------------------------",
         ]
+        totals: Dict[str, float] = defaultdict(float)
         for account in self._accounts:
-            report_lines.append(
-                f"Owner: {account.owner_name}, Balance: {account.balance} {account.currency}"
-            )
+            lines.append(f"Owner: {account.owner_name}, Balance: {account.balance:.2f} {account.currency}")
+            totals[account.currency] += account.balance
 
-        total_balance: float = sum(
-            account.balance
-            for account in self._accounts
-            if account.currency == "UAH"
-        )
-        report_lines.append("------------------------------")
-        report_lines.append(f"Total Balance (UAH): {total_balance}")
-
-        return "\n".join(report_lines)
+        lines.append("------------------------------")
+        if not totals:
+            lines.append("No accounts")
+        for currency in sorted(totals):
+            lines.append(f"Total Balance ({currency}): {totals[currency]:.2f}")
+        return "\n".join(lines)
 
     @property
     def title(self) -> str:
